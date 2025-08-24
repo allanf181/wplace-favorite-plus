@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Favorite+
 // @namespace    https://github.com/allanf181
-// @version      1.0.2
+// @version      1.0.3
 // @description  More favorite for wplace.live (with labels)
 // @author       allanf181
 // @license      MIT
@@ -182,11 +182,14 @@ let map = null;
                 return;
             }
             const selector = mutation.target.querySelector("div.flex.flex-col.items-center.gap-3");
-            if (selector.querySelector("#favorite-list")) {
+            if (selector === null) {
                 hideMarkers()
+            }else {
+                showMarkers()
+            }
+            if (selector.querySelector("#favorite-list")) {
                 return;
             }
-            showMarkers()
             const element = document.createElement("button");
             selector.appendChild(element);
             element.outerHTML = `
