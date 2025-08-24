@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Favorite+
 // @namespace    https://github.com/allanf181
-// @version      1.0.0
+// @version      1.0.1
 // @description  More favorite for wplace.live (with labels)
 // @author       allanf181
 // @license      MIT
@@ -215,7 +215,7 @@ let map = null;
     let mainDiv = document.querySelector("body > div");
     const modalHTML = `
     <div id="favorite-modal" class="modal">
-      <div class="modal-box w-11/12 max-w-4xl">
+      <div class="modal-box w-11/12 max-w-4xl max-h-11/12">
         <h3 class="font-bold text-lg">Favorite List</h3>
         <div class="modal-action">
           <label for="favorite-modal" class="btn btn-sm btn-circle absolute right-2 top-2">✕</label>
