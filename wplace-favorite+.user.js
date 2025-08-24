@@ -8,8 +8,8 @@
 // @match        *://wplace.live/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=wplace.live
 // @homepageURL  https://github.com/allanf181/wplace-favorite-plus
-// @updateURL    https:/raw.githubusercontent.com/allanf181/wplace-favorite-plus/main/wplace-favorite%2B.user.js
-// @downloadURL  https:/raw.githubusercontent.com/allanf181/wplace-favorite-plus/main/wplace-favorite%2B.user.js
+// @updateURL    https://github.com/allanf181/wplace-favorite-plus/raw/refs/heads/master/wplace-favorite+.user.js
+// @downloadURL  https://github.com/allanf181/wplace-favorite-plus/raw/refs/heads/master/wplace-favorite+.user.js
 // @require      https://unpkg.com/maplibre-gl@^5.6.2/dist/maplibre-gl.js
 // @run-at       document-start
 // ==/UserScript==
