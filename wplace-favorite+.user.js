@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Favorite+
 // @namespace    https://github.com/allanf181
-// @version      1.0.1
+// @version      1.0.2
 // @description  More favorite for wplace.live (with labels)
 // @author       allanf181
 // @license      MIT
@@ -42,7 +42,7 @@ function createMarker(coords, name) {
     const element = document.createElement("div");
     element.classList.add("text-yellow-400");
     element.classList.add("cursor-pointer");
-    element.classList.add("z-10");
+    element.classList.add("z-20");
     element.classList.add("tooltip");
     element.setAttribute("data-tip", name);
     element.innerHTML = markerIcon;
