@@ -114,9 +114,3 @@ If you encounter any issues or have suggestions:
 2. Ensure your userscript manager is up to date
 3. Try disabling other userscripts that might conflict
 4. [Open an issue](https://github.com/allanf181/wplace-favorite-plus/issues) on GitHub
-
----
-
-**Version**: 1.0.3  
-**Author**: [allanf181](https://github.com/allanf181)  
-**Last Updated**: 2024
