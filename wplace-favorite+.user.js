@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Favorite+
 // @namespace    https://github.com/allanf181
-// @version      1.0.3
+// @version      1.0.4
 // @description  More favorite for wplace.live (with labels)
 // @author       allanf181
 // @license      MIT
@@ -34,7 +34,7 @@ function waitForElement(selector) {
 const markers = [];
 
 function getOpacityFromZoom(zoom) {
-    if (zoom >= 10.5) return 0.3;
+    if (zoom >= 10.6) return 0.3;
     return 1.0;
 }
 
