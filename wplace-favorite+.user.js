@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Favorite+
 // @namespace    https://github.com/allanf181
-// @version      1.0.3
+// @version      1.1.0
 // @description  More favorite for wplace.live (with labels)
 // @author       allanf181
 // @license      MIT
@@ -202,10 +202,6 @@ let map = null;
         `;
             const favoriteButton = document.querySelector("#favorite-list");
 
-            favoriteClose.addEventListener("click", function() {
-                const modal = document.querySelector("#favorite-modal");
-                modal.removeAttribute("open");
-            })
             favoriteButton.addEventListener("click", () => {
                 const modal = document.querySelector("#favorite-modal");
                 modal.setAttribute("open", "true");
@@ -213,15 +209,32 @@ let map = null;
             });
         }
     });
+
     const leftButtons = await waitForElement("body div.absolute.right-2.top-2.z-30");
     observer.observe(leftButtons, { childList: true, subtree: true });
     let mainDiv = document.querySelector("body > div");
     const modalHTML = `
     <div id="favorite-modal" class="modal">
       <div class="modal-box w-11/12 max-w-4xl max-h-11/12">
-        <h3 class="font-bold text-lg">Favorite List</h3>
-        <div class="modal-action">
-          <label for="favorite-modal" class="btn btn-sm btn-circle absolute right-2 top-2">✕</label>
+        <div class="flex items-center gap-1">
+            <svg class="size-6" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+                <path d="m183-51 79-338L-1-617l346-29 135-319 135 319 346 29-263 228 79 338-297-180L183-51Z"></path>
+                <path d="m293-203.08 49.62-212.54-164.93-142.84 217.23-18.85L480-777.69l85.08 200.38 217.23 18.85-164.93 142.84L667-203.08 480-315.92 293-203.08Z"></path>
+            </svg>
+            <h3 class="font-bold text-lg">Favorite List</h3>
+        </div>
+        <div class="modal-action absolute right-2 top-2">
+          <button type="button" id="import-favorites" class="btn btn-sm btn-secondary btn-outline">Import
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+            </svg>
+          </button>
+          <button type="button" id="export-favorites" class="btn btn-sm btn-secondary btn-outline">Export
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
+            </svg>
+          </button>
+          <label for="favorite-modal" class="btn btn-sm btn-circle">✕</label>
         </div>
         <div class="overflow-x-auto">
           <table class="table w-full">
@@ -241,8 +254,60 @@ let map = null;
     `;
     mainDiv.insertAdjacentHTML("beforeend", modalHTML);
     const favoriteClose = await waitForElement("#favorite-modal label");
+    favoriteClose.addEventListener("click", function() {
+        const modal = document.querySelector("#favorite-modal");
+        modal.removeAttribute("open");
+    })
+    const importButton = await waitForElement("#import-favorites");
 
+    importButton.addEventListener("click", function() {
+        let base64 = prompt("Paste your favorites base64 string here:");
+        if (!base64) {
+            alert("Input cannot be empty.");
+            return;
+        }
+        try {
+            let jsonString = atob(base64);
+            let favorites = JSON.parse(jsonString);
+            if (!Array.isArray(favorites)) {
+                throw new Error("Invalid format");
+            }
+            for (const fav of favorites) {
+                if (typeof fav.title !== "string" || typeof fav.posObj !== "object" || !Array.isArray(fav.posObj.coords) || !Array.isArray(fav.posObj.pixel) || !Array.isArray(fav.posObj.tile)) {
+                    throw new Error("Invalid format");
+                }
+                if (fav.posObj.coords.length !== 2 || fav.posObj.pixel.length !== 2 || fav.posObj.tile.length !== 2) {
+                    throw new Error("Invalid format");
+                }
+                if (typeof fav.posObj.coords[0] !== "number" || typeof fav.posObj.coords[1] !== "number" ||
+                    typeof fav.posObj.pixel[0] !== "number" || typeof fav.posObj.pixel[1] !== "number" ||
+                    typeof fav.posObj.tile[0] !== "number" || typeof fav.posObj.tile[1] !== "number") {
+                    throw new Error("Invalid format");
+                }
+            }
+            let confirmImport = confirm(`This will overwrite your current favorites with ${favorites.length} favorites. Are you sure?`);
+            if (!confirmImport) return;
+            localStorage.setItem("favorites", JSON.stringify(favorites));
+            markers.forEach(marker => marker.remove());
+            markers.length = 0;
+            loadMarkers();
+            loadFavoritesTable();
+            alert("Import successful.");
+        } catch (e) {
+            alert("Failed to import favorites: " + e.message);
+        }
+    });
 
+    const exportButton = await waitForElement("#export-favorites");
+    exportButton.addEventListener("click", function() {
+        let favorites = localStorage.getItem("favorites") || "[]";
+        let base64 = btoa(favorites);
+        navigator.clipboard.writeText(base64).then(() => {
+            alert("Favorites exported to clipboard.");
+        }, () => {
+            alert("Failed to copy to clipboard. Here is the base64 string:\n" + base64);
+        });
+    });
 
     let currentPixelInfo = null;
 
