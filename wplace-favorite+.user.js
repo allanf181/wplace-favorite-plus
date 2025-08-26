@@ -34,7 +34,7 @@ function waitForElement(selector) {
 const markers = [];
 
 function getOpacityFromZoom(zoom) {
-    if (zoom >= 10.5) return 0.3;
+    if (zoom >= 10.6) return 0.3;
     return 1.0;
 }
 
