@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Favorite+
 // @namespace    https://github.com/allanf181
-// @version      1.1.0
+// @version      1.3.0
 // @description  More favorite for wplace.live (with labels)
 // @author       allanf181
 // @license      MIT
@@ -11,6 +11,7 @@
 // @updateURL    https://github.com/allanf181/wplace-favorite-plus/raw/refs/heads/master/wplace-favorite+.user.js
 // @downloadURL  https://github.com/allanf181/wplace-favorite-plus/raw/refs/heads/master/wplace-favorite+.user.js
 // @require      https://unpkg.com/maplibre-gl@^5.6.2/dist/maplibre-gl.js
+// @require      https://cdn.jsdelivr.net/npm/fuzzysort@3.1.0/fuzzysort.min.js
 // @run-at       document-start
 // ==/UserScript==
 
@@ -123,43 +124,60 @@ const markerIcon = `
     <text font-family="Serif" font-size="526.36" font-weight="bold" id="svg_3" stroke-width="0" text-anchor="middle" x="750" xml:space="preserve" y="-650">+</text>
 </svg>`
 
-function loadFavoritesTable() {
+function getAllFavorites() {
+    return JSON.parse(localStorage.getItem("favorites") || "[]");
+}
+
+function renderFavoritesTable(favorites) {
     const tableBody = document.querySelector("#favorite-table-body");
     tableBody.innerHTML = "";
-    let favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
-    favorites.forEach((fav, index) => {
+
+    favorites.forEach(fav => {
         let row = document.createElement("tr");
+
         row.innerHTML = `
                 <td>${fav.title}</td>
                 <td>Tile: (${fav.posObj.tile[0]}, ${fav.posObj.tile[1]})<br>Pixel: (${fav.posObj.pixel[0]}, ${fav.posObj.pixel[1]})<br>Coords: (${fav.posObj.coords[0].toFixed(5)}, ${fav.posObj.coords[1].toFixed(5)})</td>
                 <td>
-                    <button class="btn btn-sm btn-primary btn-soft" data-index="${index}">Fly</button>
-                    <button class="btn btn-sm btn-error btn-soft" data-index="${index}">Delete</button>
+                    <button class="btn btn-sm btn-primary btn-soft" data-coords='${JSON.stringify(fav.posObj.coords)}'>Fly</button>
+                    <button class="btn btn-sm btn-error btn-soft" data-posobj='${JSON.stringify(fav.posObj)}'>Delete</button>
                 </td>
             `;
         tableBody.appendChild(row);
     });
+
     tableBody.querySelectorAll("button.btn-primary").forEach(button => {
         button.onclick = function() {
-            let index = this.getAttribute("data-index");
-            let favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
-            let fav = favorites[index];
-            map.flyTo({center: fav.posObj.coords.reverse(), zoom: Math.max(map.getZoom(), 15)}, {origin: "flyToFav"});
+            let coords = JSON.parse(this.getAttribute("data-coords"));
+            map.flyTo({center: coords.reverse(), zoom: Math.max(map.getZoom(), 15)}, {origin: "flyToFav"});
             const modal = document.querySelector("#favorite-modal");
             modal.removeAttribute("open");
         }
     });
+
     tableBody.querySelectorAll("button.btn-error").forEach(button => {
         button.onclick = function() {
             let confirmDelete = confirm("Are you sure you want to delete this favorite?");
             if (!confirmDelete) return;
-            let index = this.getAttribute("data-index");
-            let favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
-            let fav = favorites[index];
-            removeFavorite(fav.posObj);
-            loadFavoritesTable();
+            let posObj = JSON.parse(this.getAttribute("data-posobj"));
+            removeFavorite(posObj);
+
+            const searchTerm = document.querySelector("#favorite-search").value;
+            filterAndRenderFavorites(searchTerm);
         }
     });
+}
+
+function filterAndRenderFavorites(searchTerm) {
+    const allFavorites = getAllFavorites();
+    if (!searchTerm) {
+        renderFavoritesTable(allFavorites);
+        return;
+    }
+
+    const results = fuzzysort.go(searchTerm, allFavorites, {key: 'title'});
+    const filteredFavorites = results.map(result => result.obj);
+    renderFavoritesTable(filteredFavorites);
 }
 
 let map = null;
@@ -205,7 +223,10 @@ let map = null;
             favoriteButton.addEventListener("click", () => {
                 const modal = document.querySelector("#favorite-modal");
                 modal.setAttribute("open", "true");
-                loadFavoritesTable()
+
+                const searchInput = document.querySelector("#favorite-search");
+                if (searchInput) searchInput.value = "";
+                filterAndRenderFavorites("");
             });
         }
     });
@@ -213,6 +234,7 @@ let map = null;
     const leftButtons = await waitForElement("body div.absolute.right-2.top-2.z-30");
     observer.observe(leftButtons, { childList: true, subtree: true });
     let mainDiv = document.querySelector("body > div");
+
     const modalHTML = `
     <div id="favorite-modal" class="modal">
       <div class="modal-box w-11/12 max-w-4xl max-h-11/12">
@@ -236,6 +258,11 @@ let map = null;
           </button>
           <label for="favorite-modal" class="btn btn-sm btn-circle">✕</label>
         </div>
+
+        <div class="my-4">
+            <input type="text" id="favorite-search" placeholder="Type to search..." class="input input-bordered w-full" />
+        </div>
+
         <div class="overflow-x-auto">
           <table class="table w-full">
             <thead>
@@ -252,7 +279,14 @@ let map = null;
       </div>
     </div>
     `;
+
     mainDiv.insertAdjacentHTML("beforeend", modalHTML);
+
+    const searchInput = await waitForElement("#favorite-search");
+    searchInput.addEventListener("input", (e) => {
+        filterAndRenderFavorites(e.target.value);
+    });
+
     const favoriteClose = await waitForElement("#favorite-modal label");
     favoriteClose.addEventListener("click", function() {
         const modal = document.querySelector("#favorite-modal");
@@ -291,7 +325,11 @@ let map = null;
             markers.forEach(marker => marker.remove());
             markers.length = 0;
             loadMarkers();
-            loadFavoritesTable();
+
+            const searchInput = document.querySelector("#favorite-search");
+            if (searchInput) searchInput.value = "";
+            filterAndRenderFavorites("");
+
             alert("Import successful.");
         } catch (e) {
             alert("Failed to import favorites: " + e.message);
@@ -318,13 +356,13 @@ let map = null;
                     let element = mutation.addedNodes[0];
                     let favButton = element.querySelector("div.hide-scrollbar").querySelector("button.btn-soft");
                     let favPlusButtonHTML = `
-                        <button id="favplusbutton" class="btn btn-primary btn-soft">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" class="size-4.5">
-                                <path d="m354-287 126-76 126 77-33-144 111-96-146-13-58-136-58 135-146 13 111 97-33 143ZM233-120l65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Zm247-350Z">
-                                </path>
-                            </svg>Fav+
-                        </button>
-                    `
+                            <button id="favplusbutton" class="btn btn-primary btn-soft">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" class="size-4.5">
+                                    <path d="m354-287 126-76 126 77-33-144 111-96-146-13-58-136-58 135-146 13 111 97-33 143ZM233-120l65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Zm247-350Z">
+                                    </path>
+                                </svg>Fav+
+                            </button>
+                        `
                     favButton.insertAdjacentHTML("afterend", favPlusButtonHTML)
                     document.querySelector("#favplusbutton").onclick = function () {
                         if(!currentPixelInfo) {
