@@ -89,7 +89,9 @@ wplace-favorite-plus/
 - `addFavorite(title, posObj)` - Save a new favorite location
 - `removeFavorite(posObj)` - Remove a favorite by position
 - `createMarker(coords, name)` - Create a visual marker on the map
-- `loadFavoritesTable()` - Populate the favorites management interface
+- `getAllFavorites()` - Retrieve all saved favorites from `localStorage`
+- `renderFavoritesTable(favorites)` - Populate the favorites management interface with a given list of favorites
+- `filterAndRenderFavorites(searchTerm)` - Filter all favorites using fuzzy search and render the results
 
 ### Contributing
 1. Fork the repository
